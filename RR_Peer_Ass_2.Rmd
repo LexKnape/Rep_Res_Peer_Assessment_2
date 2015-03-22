@@ -1,4 +1,4 @@
-## Across the US, which types of Storms and other severe weather are most harmful with respect to population health and have the greatest economic consequences?
+### Across the US, which types of Storms and other severe weather are most harmful with respect to population health and have the greatest economic consequences?
 
 ### Synopsis 
 
@@ -67,8 +67,8 @@ Colnames gives us an overview of the columnnames of the dataset and after readin
 colnames(stormdata)
 ```
 
-## The first question
-### Across the US, which types of Storms and other severe weather are most harmful with respect to population health.
+### The first question, 
+Across the US, which types of Storms and other severe weather are most harmful with respect to population health.
 
 According the documents of the database both variable FATALITIES and INJURIES are showing fatal and none-fatal casualties of the population. First I aggregate the values of the sum of the FATALITIES and add these to the object health. I do the same for te variable INJURIES and add these. The names of the columns of the object health are changed into event (cause of the fat & Inj), FATALITIES and INJURIES. 
 
@@ -80,8 +80,8 @@ colnames(health) <- c("event", "FATALITIES", "INJURIES")
 health <-melt(head(health[order(-health$FATALITIES,-health$INJURIES),],20))
 ```
 
-## Results;
-### To answer the first question: the number of fatalities and injuries of the population across the US, I make a plot using the ggplot package. I found that tornados are most harmful with respect to population health causing the highest number of fatalities and injuries by far
+### Results;
+To answer the first question: the number of fatalities and injuries of the population across the US, I make a plot using the ggplot package. I found that tornados are most harmful with respect to population health causing the highest number of fatalities and injuries by far
 
 ```{r}
 ggplot(health, aes(x=event, y=value, fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
@@ -89,8 +89,8 @@ ggplot(health, aes(x=event, y=value, fill=variable)) + geom_bar(stat = "identity
          scale_fill_manual (values=c("red","blue"), labels=c("Fatalities","Injuries"))
 ```
 
-## The second question
-### Across the US, which types of Storms and other severe weather are having the greatest economic consequences.
+### The second question
+Across the US, which types of Storms and other severe weather are having the greatest economic consequences.
 
 According the code book the values of the column PROPDMGEXP (property damage) and CROPDMEXP (crop damage) show the value of the economic consequences. First I print the levels of the value of the variable PROPDMGEXP to see which are present. The present level values are used to recode the PROPDMGEXP variable as numeric to get the economical value.
 
@@ -153,8 +153,8 @@ eco<-aggregate(cbind(PROPDMG, CROPDMG) ~ EVTYPE , stormdata, sum)
 EcoConsequence<-melt(head(eco[order(-eco$PROPDMG,-eco$CROPDMG),],20))
 ```
 
-## Results;
-### In order to show the which types of Storms and other severe weather have the greatest economic consequenc I make a plot using the ggplot package. The highest economical consequences is caused from floods by far
+### Results;
+In order to show the which types of Storms and other severe weather have the greatest economic consequenc I make a plot using the ggplot package. The highest economical consequences is caused from floods by far
 
 ```{r}
 ggplot(EcoConsequence, aes(x=EVTYPE, y=value, fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
