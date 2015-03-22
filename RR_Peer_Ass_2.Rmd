@@ -1,24 +1,162 @@
----
-title: "Across the US, which types of Storms and other severe weather are most harmful with respect to population health and have the greatest economic consequences?"
-author: "Lex Knape"
-date: "21 Mar 2015"
-output: html_document
----
+**Across the US, which types of Storms and other severe weather are most harmful with respect to population health and have the greatest economic consequences?**
 
-**Synopsis**
+## Synopsis 
 
-In this report we aim to describe the changes in fine particle (PM2.5) outdoor air pollution in the United States between the years 1999 and 2012. Our overall hypothesis is that out door PM2.5 has decreased on average across the U.S. due to nationwide regulatory requirements arising from the Clean Air Act. To investigate this hypothesis, we obtained PM2.5 data from the U.S. Environmental Protection Agency which is collected from monitors sited across the U.S. We specifically obtained data for the years 1999 and 2012 (the most recent complete year available). From these data, we found that, on average across the U.S., levels of PM2.5 have decreased between 1999 and 2012. At one individual monitor, we found that levels have decreased and that the variability of PM2.5 has decreased. Most individual states also experienced decreases in PM2.5, although some states saw increases.
+In this report I aim to describe the types of Storms and other severe weather that are most harmful with respect to population health and have the greatest economic consequences?" 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+I conduct this reaserach in order to prepare for severe weather events and the need to prioritize resources for different types of events. The data I used for my reserach is from the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database and contains information from the year 1950 and ends in November 2011, when and where they occur, as well as estimates of any fatalities, injuries, and property damage. From the data, I found that tornados are most harmful with respect to population health causing the highest number of fatalities and injuries by far. The highest economical consequences is caused from floods by far. The plots show the top 20 causes that are most harmful with respect to population health and have the greatest economic consequences
+
+## Data Processing
+
+From the U.S. National Oceanic and Atmospheric Administration's (NOAA) I obtained data from the storm database of the United States of America for the period from 1950 until November 2011.
+
+### Loading the libraries
+ 
 
 ```{r}
-summary(cars)
+library(bitops)
+library(RCurl)
+library(knitr)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+library(car)
 ```
 
-You can also embed plots, for example:
+### Dowloading the documents associated with the database
 
-```{r, echo=FALSE}
-plot(cars)
+There documentation of the database shows how some of the variables are constructed/defined. These documents are:
+
+[National Weather Service Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+```{r}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf"
+download.file(fileUrl, destfile = "storm.data.pdf", method = "curl")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+[National Climatic Data Center Storm Events FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+```{r}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf"
+download.file(fileUrl, destfile = "storm.event.pdf", method = "curl")
+```
+
+### Dowloading the database, unzip it and read the data.
+
+I first assign the fileUrl with the webadress of the stormdata. I downloaded the file to it's destination file giving the name: tempfile.csv.bz2, with the curl method (https). I read the data in the object, stormdata, which comes in the form of a comma-separated-value file compressed via the bzip2 algorithm.
+
+```{r}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileUrl, destfile = "tempfile.csv.bz2", method = "curl")
+stormdata <- read.csv("tempfile.csv.bz2")
+```
+
+After reading the 1950 - 2011 data I checked the first few rows ( there are 902.297) in the dataset.
+
+```{r}
+dim(stormdata)
+```
+
+```{r}
+## [1] 902297     37
+```
+
+Colnames gives us an overview of the columnnames of the dataset and after reading the  
+
+```{r}
+colnames(stormdata)
+```
+
+**The first question**
+## Across the US, which types of Storms and other severe weather are most harmful with respect to population health.
+
+According the documents of the database both variable FATALITIES and INJURIES are showing fatal and none-fatal casualties of the population. First I aggregate the values of the sum of the FATALITIES and add these to the object health. I do the same for te variable INJURIES and add these. The names of the columns of the object health are changed into event (cause of the fat & Inj), FATALITIES and INJURIES. 
+
+```{r}
+stormdata$EVTYPE <- tolower(stormdata$EVTYPE)
+health <- aggregate(c(stormdata$FATALITIES), by = list(stormdata$EVTYPE), "sum")
+health <- cbind(health, y = aggregate(c(stormdata$INJURIES), by = list(stormdata$EVTYPE), "sum")$x)
+colnames(health) <- c("event", "FATALITIES", "INJURIES")
+health <-melt(head(health[order(-health$FATALITIES,-health$INJURIES),],20))
+```
+
+**Results;**
+### To answer the first question: the number of fatalities and injuries of the population across the US, I make a plot using the ggplot package. I found that tornados are most harmful with respect to population health causing the highest number of fatalities and injuries by far
+
+```{r}
+ggplot(health, aes(x=event, y=value, fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
+         ggtitle("Events harmful for the population") + labs(x = "", y="Causes") +
+         scale_fill_manual (values=c("red","blue"), labels=c("Fatalities","Injuries"))
+```
+
+**The second question**
+### Across the US, which types of Storms and other severe weather are having the greatest economic consequences.
+
+According the code book the values of the column PROPDMGEXP (property damage) and CROPDMEXP (crop damage) show the value of the economic consequences. First I print the levels of the value of the variable PROPDMGEXP to see which are present. The present level values are used to recode the PROPDMGEXP variable as numeric to get the economical value.
+
+```{r}
+print(levels(stormdata$PROPDMGEXP))
+```
+
+```{r}
+stormdata$PROPDMG<-stormdata$PROPDMG*as.numeric(Recode(stormdata$PROPDMGEXP, 
+                                                       "
+                                                       ''= 0;
+                                                       '0'=1;
+                                                       '1'=10;
+                                                       '2'=100;
+                                                       '3'=1000;
+                                                       '4'=10000;
+                                                       '5'=100000;
+                                                       '6'=1000000;
+                                                       '7'=10000000;
+                                                       '8'=100000000;
+                                                       'B'=1000000000;
+                                                       'h'=100;
+                                                       'H'=100;
+                                                       'K'=1000;
+                                                       'm'=1000000;
+                                                       'M'=1000000;
+                                                       '?'=0;
+                                                       '-'=0;
+                                                       '+'=0",
+                                                       as.factor.result=FALSE)
+)
+```
+
+The code book also shows the values of the variable CROPDMEXP (crop damage) with the economic consequences. Printing the levels show which are present and must used in recodeing the value CORPDMGEXP to get numeric value of CROPDMG containing the economical damage value.
+
+```{r}
+print(levels(stormdata$CROPDMGEXP))
+```
+
+```{r}
+stormdata$CROPDMG<-stormdata$CROPDMG*as.numeric(Recode(stormdata$CROPDMGEXP, 
+                                                       "
+                                                       '0'=1;
+                                                       '2'=100;
+                                                       'B'=1000000000;
+                                                       'k'=1000;
+                                                       'K'=1000;
+                                                       'm'=1000000;
+                                                       'M'=1000000;
+                                                       ''= 0;
+                                                       '?'=0",
+                                                       as.factor.result=FALSE)
+                                                )
+```
+
+I bind variable values of PROPDMG and CROPDMG and summarize (aggegrate) the values per event. Out of the whole frame I finally extracted the first 20 causes. 
+
+```{r}
+eco<-aggregate(cbind(PROPDMG, CROPDMG) ~ EVTYPE , stormdata, sum)
+EcoConsequence<-melt(head(eco[order(-eco$PROPDMG,-eco$CROPDMG),],20))
+```
+**Results;**
+### In order to show the which types of Storms and other severe weather have the greatest economic consequenc I make a plot using the ggplot package. The highest economical consequences is caused from floods by far
+
+```{r}
+ggplot(EcoConsequence, aes(x=EVTYPE, y=value, fill=variable)) + geom_bar(stat = "identity") + coord_flip() +
+        ggtitle("Economic consequences") + labs(x = "Events", y="Economical consequence (cost) in dollars") +
+        scale_fill_manual (values=c("red","blue"), labels=c("Property Damage","Crop Damage"))
+```
